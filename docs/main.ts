@@ -66,7 +66,8 @@ class CourseManager {
     "専門基礎科目_選択": {min:4, max:8},
     "系科目_選択": {min:4, max:8},
     "コース科目_選択": {min:16, max:Infinity},
-    "他コース科目_選択": {min:0, max:6}
+    "他コース科目_選択": {min:0, max:6},
+    "course_total": { min: 16 }
   };
 
   constructor() {
@@ -210,8 +211,6 @@ class GraduationChecker {
                              totals["コース科目_必須"] + totals["コース科目_選択"] +
                              totals["他コース科目_選択"];
 
-    const electiveTotalForCheck = totals["コース科目_選択"] + totals["他コース科目_選択"];
-
     const checkElective = (cat: string) => {
       const obtained = totals[cat];
       if (cat === "コース科目_選択") return `${obtained} 単位`;
@@ -220,7 +219,13 @@ class GraduationChecker {
       return `${obtained} 単位（${limit.min}〜${limit.max} 単位）`;
     };
 
-    const html = `<div class="card ${specializedTotal >= reqs.specialized && electiveTotalForCheck>=this.electiveLimits["コース科目_選択"].min ? "pass" : "fail"}">
+    const combinedCourseElectives =
+      totals["コース科目_選択"] + totals["他コース科目_選択"];
+
+    const passCourseElective =
+      combinedCourseElectives >= this.electiveLimits["course_total"].min; //まだ改善できていないので，帰ってからやる
+
+    const html = `<div class="card ${passCourseElective && specializedTotal >= reqs.specialized ? "pass" : "fail"}">
       <h3>専門教育科目</h3>
       <p>専門基礎必須: ${totals["専門基礎科目_必須"]} 単位</p>
       <p>専門基礎選択: ${checkElective("専門基礎科目_選択")}</p>
@@ -229,9 +234,9 @@ class GraduationChecker {
       <p>コース科目必須: ${totals["コース科目_必須"]} 単位</p>
       <p>コース科目選択: ${checkElective("コース科目_選択")}</p>
       <p>他コース選択: ${checkElective("他コース科目_選択")} (上限 ${this.maxOtherCourseCredits})</p>
-      <p>選択単位合計（コース＋他コース）: ${electiveTotalForCheck} / ${this.electiveLimits["コース科目_選択"].min} 単位以上</p>
+      <p>選択単位合計（コース＋他コース）: ${combinedCourseElectives} / ${this.electiveLimits["course_total"].min} 単位以上</p>
       <p>合計: ${specializedTotal} / 必要単位: ${reqs.specialized}</p>
-      <p>${specializedTotal >= reqs.specialized && electiveTotalForCheck>=this.electiveLimits["コース科目_選択"].min ? "合格" : "不合格"}</p>
+      <p>${specializedTotal >= reqs.specialized && combinedCourseElectives>=this.electiveLimits["course_total"].min ? "合格" : "不合格"}</p>
     </div>`;
 
     const totalCredits = specializedTotal + reqs.obtainedGeneralEducation;
